@@ -57,6 +57,6 @@ Live vulnerable Web Application for Penetrate Testing<br>Live vulnerable Web App
 [![](https://komarev.com/ghpvc/?username=aadi-12345678&icon=0&color=0)](https://visitcount.itsvg.in)
 
 <!-- Proudly created with GPRM ( https://gprm.itsvg.in ) -->
-<h4>You all can test your all hacking on this lab using docker this project is just a prototype I have created for myself as a lab for testing but I loved it so much I thought to give this lab to public then i tested it after that I hosted on Vercel I have two servers one is docker and Vercel.</h4>
+<h4>You all can test your all hacking on this lab using docker this project is just a prototype I have created for myself as a lab for testing but I loved it so much I thought to give this lab to public then i tested it after that I hosted on Vercel I have one server Vercel.</h4>
 <p><a href="https://sawaf-vulnerable-1.vercel.app/?_vercel_share=8cZ9CYa9SNZDhRAa5tfyLtFW0W0apOIp">Visit Total-Coverage WAF Control Center!</a></p
 <h4>Please promote my lab</h4>
