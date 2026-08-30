@@ -62,5 +62,5 @@ Live vulnerable Web Application for Penetrate Testing<br>Live vulnerable Web App
 <h4>Please promote my lab</h4>
 
 <blockquote>
-When I createed this vulneable labe I cided it in Python and named as CP Guard Fullform is Cerebral Palsy Guard.
+When I createed this vulneable labe I created it in Python and named as CP Guard Fullform is Cerebral Palsy Guard.
 </blockquote>
