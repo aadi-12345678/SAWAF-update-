@@ -70,7 +70,7 @@ Live vulnerable Web Application for Penetrate Testing<br>Live vulnerable Web App
 <h4>Please promote my lab</h4>
 
 <blockquote>
-When I created this vulnerable lab I created it in Python and named as CP Guard Full form is Cerebral Palsy Guard. There was a issue with python app.  This new Webapp named as Super Advanced Web Firewall
+When I created this vulnerable lab I created it in Python and named as CP Guard Full form is Cerebral Palsy Guard. There was a issue with python app. This new Webapp named as Super Advanced Web Application Firewall
 </blockquote>
 
 <blockquote>
