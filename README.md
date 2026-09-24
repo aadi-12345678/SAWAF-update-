@@ -1,5 +1,4 @@
-<img width="200" height="200" alt="Android-apks" src="https://github.com/user-attachments/assets/47a50ab9-375b-4002-8afe-6a3d953fd84f" />
-
+<img width="450" height="450" alt="qrcode_github com" src="https://github.com/user-attachments/assets/78f31b48-fb0a-4217-a2d3-c4d3c9f35607" />
 
 ```bash
 docker build -t my-html-site .
